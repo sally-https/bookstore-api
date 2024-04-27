@@ -15,7 +15,7 @@ class VerifyStudent extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'personal_email',
+        'school_id',
         'verification_code',
         'expiration',
     ];
@@ -25,6 +25,6 @@ class VerifyStudent extends Model
      */
     public function user()
     {
-        return $this->belongsTo(User::class, 'personal_email', 'id');
+        return $this->belongsTo(User::class, 'school_id', 'id');
     }
 }

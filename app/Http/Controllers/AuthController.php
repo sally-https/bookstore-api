@@ -26,7 +26,7 @@ class AuthController extends Controller
     {
         // Validate the inputs
         $validator = Validator::make($request->all(), [
-            'personal_email' => 'required|string|email|max:254',
+            'school_id' => 'required|string|email|max:254',
             'password' => 'required|string',
         ]);
 
@@ -36,11 +36,11 @@ class AuthController extends Controller
         }
 
         // Retrieve the user details
-        $user = User::where('personal_email', $request->email)->first();
+        $user = User::where('school_id', $request->email)->first();
 
         // Attempt authentication
-        if (!$token = auth()->attempt(['personal_email' => $request->email, 'password' => $request->password])) {
-            return response()->json(['success' => false, 'errors' => ['personal_email' => ['Invalid email or password']]], 401);
+        if (!$token = auth()->attempt(['school_id' => $request->email, 'password' => $request->password])) {
+            return response()->json(['success' => false, 'errors' => ['school_id' => ['Invalid email or password']]], 401);
         }
 
         // Retrieve user details
@@ -67,7 +67,7 @@ public function userLogin(Request $request)
 {
     // Validate the inputs
     $validator = Validator::make($request->all(), [
-        'personal_email' => 'required|string|email',
+        'school_id' => 'required|string|email',
         'verification_code' => 'required|string|max:5|min:5',
     ]);
 
@@ -76,7 +76,7 @@ public function userLogin(Request $request)
     }
 
     // Find the verification record
-    $verification = VerifyStudent::where('personal_email', $request->personal_email)
+    $verification = VerifyStudent::where('school_id', $request->school_id)
                                  ->where('verification_code', $request->verification_code)
                                  ->where('expiration', '>', now())
                                  ->first();
@@ -86,12 +86,12 @@ public function userLogin(Request $request)
     }
 
     // Retrieve the user by personal email
-    $user = User::where('personal_email', $request->personal_email)->first();
+    $user = User::where('school_id', $request->school_id)->first();
 
     if (!$user) {
         // If the user doesn't exist, create a new user
         $user = User::create([
-            'personal_email' => $request->personal_email,
+            'school_id' => $request->school_id,
         ]);
     }
 
@@ -108,7 +108,7 @@ public function userLogin(Request $request)
         'message' => 'User logged in successfully.',
         'user' => [
             'accessToken' => $auth_token,
-            'personal_email' => $user->personal_email,
+            'school_id' => $user->school_id,
             'created_at' => $user->created_at,
             'role' => $user->role,
             'student_id' => $user->student_id,

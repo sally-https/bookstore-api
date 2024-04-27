@@ -16,7 +16,7 @@ class User extends Authenticatable implements JWTSubject
      * @var array<int, string>
      */
     protected $fillable = [
-        'personal_email',
+        'school_id',
         'name',
         'role',
     ];
@@ -29,7 +29,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function verification()
     {
-        return $this->hasOne(VerifyStudent::class, 'personal_email', 'id');
+        return $this->hasOne(VerifyStudent::class, 'school_id', 'id');
     }
 
     // Rest omitted for brevity
@@ -54,7 +54,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'role' => $this->role,
             'name' => $this->name,
-            'personal_email' => $this->personal_email,
+            'school_id' => $this->school_id,
             'id' => $this->id,
         ];
     }

@@ -7,14 +7,9 @@ use App\Models\VerifyStudent;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
-use ElasticEmail\Api\EmailsApi;
-use ElasticEmail\Configuration;
-use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Log;
-use ElasticEmail\Model\EmailTransactionalMessageData;
-use ElasticEmail\Model\TransactionalRecipient;
-use ElasticEmail\Model\EmailContent;
-use ElasticEmail\Model\BodyPart;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VerifyStudent as VerifyStudentMail;
+use App\Jobs\SendVerificationEmailJob; // Import the SendVerificationEmailJob
 
 class VerifyStudentController extends Controller
 {
@@ -28,71 +23,49 @@ class VerifyStudentController extends Controller
     {
         // Validate the inputs
         $validator = Validator::make($request->all(), [
-            'personal_email' => 'required|string|email|min:10',
+            'school_id' => 'required|string|min:9|max:9',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        // Construct the email address
-        $email = $request->personal_email;
+        // Append @nileuniversity.edu.ng to the student ID
+        $email = $request->school_id . '@nileuniversity.edu.ng';
 
-        // Generate a verification token
-        $token = strtoupper(Str::random(5));
+        // Check if the email already exists
+        $existingVerification = VerifyStudent::where('school_id', $email)->first();
 
-        // Calculate token expiration time (25 minutes from now)
-        $expiration = Carbon::now()->addMinutes(25);
+        if ($existingVerification) {
+            // Check if the verification code has expired
+            if ($existingVerification->expiration > Carbon::now()) {
+                // If it hasn't expired, return a response indicating that another verification cannot be generated
+                return response()->json(['message' => 'Another verification code cannot be generated.'], 409);
+            } else {
+                // If it has expired, generate a new verification code
+                $existingVerification->verification_code = strtoupper(Str::random(5));
+                $existingVerification->expiration = Carbon::now()->addMinutes(25);
+                $existingVerification->save();
+            }
+        } else {
+            // Generate a verification token
+            $token = strtoupper(Str::random(5));
 
-        // Store the token and expiration time in the database
-        VerifyStudent::create([
-            'personal_email' => $request->personal_email,
-            'verification_code' => $token,
-            'expiration' => $expiration,
-        ]);
+            // Calculate token expiration time (25 minutes from now)
+            $expiration = Carbon::now()->addMinutes(1);
 
-        // Send the verification email
-        $this->sendVerificationEmail($email, $token);
+            // Store the token and expiration time in the database
+            VerifyStudent::create([
+                'school_id' => $email,
+                'verification_code' => $token,
+                'expiration' => $expiration,
+            ]);
+        }
+
+        // Dispatch the job to send the verification email
+        SendVerificationEmailJob::dispatch($email, $token ?? $existingVerification->verification_code);
 
         // Return a success response
-        return response()->json(['message' => 'Verification email sent'], 200);
-    }
-
-    /**
-     * Send verification email.
-     *
-     * @param string $email
-     * @param string $token
-     * @return void
-     */
-    private function sendVerificationEmail($email, $token)
-    {
-        $apiKey = config('services.elastic_email.api_key');
-
-        $config = Configuration::getDefaultConfiguration()->setApiKey('X-ElasticEmail-ApiKey', $apiKey);
-        $apiInstance = new EmailsApi(new Client(), $config);
-
-        // Construct email message data
-        $email_message_data = new EmailTransactionalMessageData([
-            "recipients" => new TransactionalRecipient([
-                "to" => [$email],
-            ]),
-            "content" => new EmailContent([
-                "body" => [new BodyPart([
-                    "content_type" => "HTML",
-                    "content" => "<p>Your verification token is: <strong>$token</strong></p>",
-                ])],
-                "from" => "Salihat from BookStore <no-reply@use-api-services.com>",
-                "subject" => "Your Bookstore OTP is $token",
-            ]),
-        ]);
-
-        try {
-            // Send the email
-            $apiInstance->emailsTransactionalPost($email_message_data);
-        } catch (\Exception $e) {
-            // Handle exception if needed
-            Log::error('Failed to send email: ' . $e->getMessage());
-        }
+        return response()->json(['message' => 'Verification email queued for sending'], 200);
     }
 }

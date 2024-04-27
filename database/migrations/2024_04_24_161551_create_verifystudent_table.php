@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('verifystudent', function (Blueprint $table) {
             $table->id();
-            $table->string('personal_email')->unique();
+            $table->string('school_id')->unique();
             $table->string('verification_code');
             $table->timestamp('expiration')->nullable();
             $table->timestamps();
