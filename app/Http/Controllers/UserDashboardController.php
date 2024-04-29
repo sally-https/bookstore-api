@@ -43,4 +43,45 @@ class UserDashboardController extends Controller
             ],
         ]);
     }
+
+    public function bookLendingDetails()
+{
+    // Get the authenticated user
+    $user = Auth::user();
+
+    // Get all books borrowed by the user
+    $borrowedBooks = Borrow::where('user_id', $user->id)
+        ->whereNull('returned_at')
+        ->with('book')
+        ->get();
+
+    // Prepare the lending details
+    $lendingDetails = $borrowedBooks->map(function ($borrow) {
+        $book = $borrow->book;
+        return [
+            'id' => $borrow->id,
+            'title' => $book->book_name,
+            'borrowDate' => $borrow->created_at,
+            'returnDeadline' => Carbon::parse($borrow->return_deadline)->addHour()->format('Y-m-d H:i:s'),
+            'status' => $this->getBookStatus($borrow->return_deadline),
+        ];
+    });
+
+    // Return the lending details as JSON response
+    return response()->json($lendingDetails);
+}
+
+private function getBookStatus($returnDeadline)
+{
+    $today = Carbon::now();
+    $deadline = Carbon::parse($returnDeadline);
+
+    if ($today > $deadline) {
+        return 'Overdue';
+    } elseif ($today < $deadline) {
+        return 'Pending';
+    } else {
+        return 'Returned';
+    }
+}
 }

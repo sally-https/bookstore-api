@@ -6,12 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Borrow;
 use App\Models\Book;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class BorrowsController extends Controller
 {
     public function borrowBook(Request $request)
     {
+        Log::info('Request payload:', $request->all());
         // Define validation rules
         $rules = [
             'user_id' => 'required|exists:users,id',

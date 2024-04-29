@@ -27,6 +27,7 @@ Route::group([
 ], function () {
     Route::get('/adminDashboard', [AdminDashboardController::class, 'dashboardInfo'] );
     Route::get('/userDashboard', [UserDashboardController::class, 'userDashboardInfo'] );
+    Route::get('/bookLendingDetails', [UserDashboardController::class, 'bookLendingDetails'] );
     Route::get('/userlibrary', [BooksController::class, 'userLibraryInfo'] );
     Route::post('/admin-logout', [AuthController::class, 'adminLogout'] );
     Route::post('/user-logout', [AuthController::class, 'userLogout'] );
