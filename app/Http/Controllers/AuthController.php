@@ -153,8 +153,8 @@ public function userRegister(Request $request)
     return response()->json([
         'success' => true,
         'message' => 'User registered successfully.',
+        'accessToken' => $auth_token,
         'user' => [
-            'accessToken' => $auth_token,
             'school_id' => $user->school_id,
             'created_at' => $user->created_at,
             'role' => $user->role,
