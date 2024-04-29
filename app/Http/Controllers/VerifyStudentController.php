@@ -27,7 +27,7 @@ class VerifyStudentController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         // Append @nileuniversity.edu.ng to the student ID
@@ -40,7 +40,7 @@ class VerifyStudentController extends Controller
             // Check if the verification code has expired
             if ($existingVerification->expiration > Carbon::now()) {
                 // If it hasn't expired, return a response indicating that another verification cannot be generated
-                return response()->json(['message' => 'Another verification code cannot be generated.'], 409);
+                return response()->json(['success' => false, 'message' => 'Another verification code cannot be generated.'], 422);
             } else {
                 // If it has expired, generate a new verification code
                 $existingVerification->verification_code = strtoupper(Str::random(5));

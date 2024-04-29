@@ -19,6 +19,7 @@ class User extends Authenticatable implements JWTSubject
         'school_id',
         'name',
         'role',
+        'password',
     ];
 
     public function borrows()

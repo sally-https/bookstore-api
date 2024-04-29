@@ -16,6 +16,7 @@ Route::group([
 ], function () {
     Route::post('/admin-login', [AuthController::class, 'adminLogin'] );
     Route::post('/user-login', [AuthController::class, 'userLogin'] );
+    Route::post('/user-register', [AuthController::class, 'userRegister'] );
     Route::post('/verify-student', [VerifyStudentController::class, 'studentVerification'] );
 });
 
@@ -26,6 +27,7 @@ Route::group([
 ], function () {
     Route::get('/adminDashboard', [AdminDashboardController::class, 'dashboardInfo'] );
     Route::get('/userDashboard', [UserDashboardController::class, 'userDashboardInfo'] );
+    Route::get('/userlibrary', [BooksController::class, 'userLibraryInfo'] );
     Route::post('/admin-logout', [AuthController::class, 'adminLogout'] );
     Route::post('/user-logout', [AuthController::class, 'userLogout'] );
     Route::post('/add-book',[BooksController::class, 'storeBook']);

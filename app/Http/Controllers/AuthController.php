@@ -11,7 +11,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Models\VerifyStudent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
 
 class AuthController extends Controller
@@ -63,36 +63,83 @@ class AuthController extends Controller
         return response()->json($response, 200);
     }
 
-public function userLogin(Request $request)
+    public function userLogin(Request $request)
+    {
+        // Validate the inputs
+        $validator = Validator::make($request->all(), [
+            'school_id' => 'required|string|min:9|max:9',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // Append '@nileuniversity.edu.ng' to the school_id
+        $school_id = $request->school_id . '@nileuniversity.edu.ng';
+
+        // Find the user by school_id
+        $user = User::where('school_id', $school_id)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'errors' => ['school_id' => ['User not found']]], 404);
+        }
+
+        // Verify the password
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['success' => false, 'errors' => ['password' => ['Invalid password']]], 401);
+        }
+
+        try {
+            // Generate JWT token for the user
+            $auth_token = JWTAuth::fromUser($user);
+        } catch (JWTException $e) {
+            return response()->json(['success' => false, 'errors' => ['token' => ['Failed to generate token']]], 500);
+        }
+
+        // Return success response with token
+        return response()->json([
+            'success' => true,
+            'message' => 'User logged in successfully.',
+            'accessToken' => $auth_token,
+            'user' => [
+                'user_id' => $user->id,
+                'school_id' => $user->school_id,
+                'created_at' => $user->created_at,
+                'role' => $user->role,
+                'student_id' => $user->student_id,
+                'name' => $user->name,
+            ],
+        ], 200);
+    }
+
+public function userRegister(Request $request)
 {
     // Validate the inputs
     $validator = Validator::make($request->all(), [
-        'school_id' => 'required|string|email',
-        'verification_code' => 'required|string|max:5|min:5',
+        'school_id' => 'required|string|min:9|max:9',
+        'password' => 'required|string|min:6',
     ]);
 
     if ($validator->fails()) {
         return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
     }
 
-    // Find the verification record
-    $verification = VerifyStudent::where('school_id', $request->school_id)
-                                 ->where('verification_code', $request->verification_code)
-                                 ->where('expiration', '>', now())
-                                 ->first();
+    // Append '@nileuniversity.edu.ng' to the school_id
+    $school_id = $request->school_id . '@nileuniversity.edu.ng';
 
-    if (!$verification) {
-        return response()->json(['success' => false, 'errors' => ['verification' => ['Invalid verification code or expired']]], 401);
-    }
-
-    // Retrieve the user by personal email
-    $user = User::where('school_id', $request->school_id)->first();
+    // Check if the user already exists
+    $user = User::where('school_id', $school_id)->first();
 
     if (!$user) {
         // If the user doesn't exist, create a new user
         $user = User::create([
-            'school_id' => $request->school_id,
+            'school_id' => $school_id,
+            'password' => bcrypt($request->password),
         ]);
+    } else {
+        // If the user already exists, return an error response
+        return response()->json(['success' => false, 'errors' => ['school_id' => ['User already exists']]], 409);
     }
 
     try {
@@ -105,7 +152,7 @@ public function userLogin(Request $request)
     // Return success response with token
     return response()->json([
         'success' => true,
-        'message' => 'User logged in successfully.',
+        'message' => 'User registered successfully.',
         'user' => [
             'accessToken' => $auth_token,
             'school_id' => $user->school_id,
@@ -116,7 +163,6 @@ public function userLogin(Request $request)
         ],
     ], 200);
 }
-
 
 
 
