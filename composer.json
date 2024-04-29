@@ -9,7 +9,6 @@
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
-        "milon/barcode": "^11.0",
         "picqer/php-barcode-generator": "^2.4",
         "tymon/jwt-auth": "^2.1"
     },
